@@ -25,6 +25,10 @@ dependencies:
     sdk: flutter
   font_awesome_flutter:
   sip_ua:
+  shared_preferences:
+  http:
+  nice_button:
+  # flutter_webrtc:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

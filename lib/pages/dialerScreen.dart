@@ -4,17 +4,19 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:madadkaronline/style/theme.dart' as Theme;
 import 'package:sip_ua/sip_ua.dart';
 
-class MainPage extends StatefulWidget {
+
+class DialerPage extends StatefulWidget {
   @override
-  _MainPageState createState() => _MainPageState();
+  _DialerPageState createState() => _DialerPageState();
 }
 
-class _MainPageState extends State<MainPage> implements SipUaHelperListener {
+class _DialerPageState extends State<DialerPage>
+    implements SipUaHelperListener {
   String _password = 'alimohseni@62';
   String _wsUri = 'ws://vs.sharifngo.com:8088/ws';
-  String _sipUri = '4004@vs.sharifngo.com';
-  String _displayName = '4004';
-  String _authorizationUser = '4004';
+  String _sipUri = '4009@vs.sharifngo.com';
+  String _displayName = '4009';
+  String _authorizationUser = '4009';
   TextEditingController _controller = new TextEditingController();
 
   RTCVideoRenderer _localRenderer = RTCVideoRenderer();
@@ -33,6 +35,10 @@ class _MainPageState extends State<MainPage> implements SipUaHelperListener {
   CallStateEnum _callstate = CallStateEnum.NONE;
   SIPUAHelper helper = SIPUAHelper();
   bool isRegistered = false;
+
+  Future<List<HamisInfo>> GetHamis() async {
+
+  }
 
   void _handelStreams(CallState event) async {
     MediaStream stream = event.stream;
@@ -145,10 +151,15 @@ class _MainPageState extends State<MainPage> implements SipUaHelperListener {
       textDirection: TextDirection.rtl,
       child: new Scaffold(
         appBar: AppBar(
-          title: new Icon(
-            isRegistered ? Icons.phone_android : Icons.phonelink_erase,
-            color: isRegistered ? Colors.greenAccent : Colors.black26,
-          ),
+            title: new Row(
+              children: <Widget>[
+                new Text('وضعیت خط تلفن'),
+                new Icon(
+                  isRegistered ? Icons.phone_android : Icons.phonelink_erase,
+                  color: isRegistered ? Colors.greenAccent : Colors.black26,
+                ),
+              ],
+            )
         ),
         body: Container(
             width: MediaQuery.of(context).size.width,

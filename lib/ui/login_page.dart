@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:madadkaronline/pages/main.dart';
+import 'package:http/http.dart' as http;
+import 'package:madadkaronline/classes/madadkar.dart';
+import 'package:madadkaronline/globals.dart';
+import 'package:madadkaronline/pages/mainScreen.dart';
 import 'package:madadkaronline/style/theme.dart' as Theme;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key key}) : super(key: key);
@@ -15,6 +21,7 @@ class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
+  //SharedPreferences prefs = await SharedPreferences.getInstance();
   final FocusNode myFocusNodeEmailLogin = FocusNode();
   final FocusNode myFocusNodePasswordLogin = FocusNode();
 
@@ -22,18 +29,56 @@ class _LoginPageState extends State<LoginPage>
   final FocusNode myFocusNodeEmail = FocusNode();
   final FocusNode myFocusNodeName = FocusNode();
 
-  TextEditingController loginEmailController = new TextEditingController();
+  TextEditingController loginUsernameController = new TextEditingController();
   TextEditingController loginPasswordController = new TextEditingController();
 
   bool _obscureTextLogin = true;
-  bool _obscureTextSignup = true;
-  bool _obscureTextSignupConfirm = true;
 
-  TextEditingController signupEmailController = new TextEditingController();
-  TextEditingController signupNameController = new TextEditingController();
-  TextEditingController signupPasswordController = new TextEditingController();
-  TextEditingController signupConfirmPasswordController =
-      new TextEditingController();
+  //bool _obscureTextSignup = true;
+  // bool _obscureTextSignupConfirm = true;
+
+  //TextEditingController signupEmailController = new TextEditingController();
+  // TextEditingController signupNameController = new TextEditingController();
+  //TextEditingController signupPasswordController = new TextEditingController();
+  //TextEditingController signupConfirmPasswordController =
+  //new TextEditingController();
+  Future<void> loginToSystem() async {
+    var result = await http.post(ServerUrl + 'token',
+        body: {
+          'grant_type': 'password',
+          'username': loginUsernameController.text,
+          'password': loginPasswordController.text
+        }
+    );
+    if (result.statusCode == 200) {
+      //debugPrint('${result.body}');
+      var jResult = json.decode(result.body);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      //debugPrint(jResult['access_token']);
+      prefs.setString('token', jResult['access_token']);
+      //debugPrint(prefs.get('token'));
+      //http.post(ServerUrl+'')
+      madadkarInfo info = await getMadadkarInfo();
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => mainPage(madadkar: info,),));
+    } else {
+      showInSnackBar('نام کاربری یا رمز عبور اشتباه است');
+    }
+  }
+
+  Future<madadkarInfo> getMadadkarInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var result = await http.post(ServerUrl + 'api/Madadkar/GetMadadkarInfo',
+        headers: {
+          'Authorization': 'Bearer ' + prefs.getString('token')
+        }
+    );
+    if (result.statusCode == 200) {
+      var jResult = json.decode(result.body);
+      return madadkarInfo.fromJson(jResult);
+    }
+  }
+
 
   PageController _pageController;
 
@@ -111,6 +156,8 @@ class _LoginPageState extends State<LoginPage>
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    loginPasswordController.text = '48067';
+    loginUsernameController.text = '09378170204';
 
     _pageController = PageController();
   }
@@ -123,7 +170,7 @@ class _LoginPageState extends State<LoginPage>
         value,
         textAlign: TextAlign.center,
         style:
-            TextStyle(color: Colors.white, fontSize: 16.0, fontFamily: "Yekan"),
+        TextStyle(color: Colors.white, fontSize: 16.0, fontFamily: "Yekan"),
       ),
       backgroundColor: Colors.blue,
       duration: Duration(seconds: 3),
@@ -155,7 +202,7 @@ class _LoginPageState extends State<LoginPage>
                             top: 20.0, bottom: 20.0, left: 25.0, right: 25.0),
                         child: TextField(
                           focusNode: myFocusNodeEmailLogin,
-                          controller: loginEmailController,
+                          controller: loginUsernameController,
                           keyboardType: TextInputType.emailAddress,
                           style: TextStyle(
                               fontFamily: "Yekan",
@@ -170,7 +217,7 @@ class _LoginPageState extends State<LoginPage>
                             ),
                             hintText: "نام کاربری",
                             hintStyle:
-                                TextStyle(fontFamily: "Yekan", fontSize: 17.0),
+                            TextStyle(fontFamily: "Yekan", fontSize: 17.0),
                           ),
                         ),
                       ),
@@ -199,7 +246,7 @@ class _LoginPageState extends State<LoginPage>
                             ),
                             hintText: "رمز عبور",
                             hintStyle:
-                                TextStyle(fontFamily: "Yekan", fontSize: 17.0),
+                            TextStyle(fontFamily: "Yekan", fontSize: 17.0),
                             suffixIcon: GestureDetector(
                               onTap: _toggleLogin,
                               child: Icon(
@@ -258,13 +305,18 @@ class _LoginPageState extends State<LoginPage>
                               fontFamily: "Yekan"),
                         ),
                       ),
-                      onPressed: () => Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MainPage(),
-                          ))
-                      // showInSnackBar("کلید ورود فشرده شد")),
-                      )),
+                      onPressed: () {
+                        if (loginUsernameController.text.isEmpty) {
+                          showInSnackBar('نام کاربری را وارد کنید');
+                          return;
+                        }
+                        if (loginPasswordController.text.isEmpty) {
+                          showInSnackBar('رمز عبور را وارد کنید');
+                        }
+                        loginToSystem();
+                      }
+                    // showInSnackBar("کلید ورود فشرده شد")),
+                  )),
             ],
           ),
           Padding(
@@ -326,15 +378,5 @@ class _LoginPageState extends State<LoginPage>
     });
   }
 
-  void _toggleSignup() {
-    setState(() {
-      _obscureTextSignup = !_obscureTextSignup;
-    });
-  }
 
-  void _toggleSignupConfirm() {
-    setState(() {
-      _obscureTextSignupConfirm = !_obscureTextSignupConfirm;
-    });
-  }
 }
