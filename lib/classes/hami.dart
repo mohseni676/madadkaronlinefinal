@@ -9,7 +9,7 @@ class HamisInfo {
   String madadkarPhone;
   String madadkarMobile;
   String madadkarMobile2;
-  Null hamiCode;
+  String hamiCode;
   String hamiLName;
   String hamiFName;
   String hamiMobile1;

@@ -7,6 +7,8 @@ class madadkarInfo {
   String sipPassword;
   String sipExtention;
 
+  //String ipAddress;
+
   madadkarInfo(
       {this.madadkarName,
       this.madadkarId,

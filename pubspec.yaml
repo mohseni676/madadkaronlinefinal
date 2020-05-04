@@ -28,6 +28,8 @@ dependencies:
   shared_preferences:
   http:
   nice_button:
+  get_ip:
+
   # flutter_webrtc:
 
   # The following adds the Cupertino Icons font to your application.

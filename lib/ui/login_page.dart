@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get_ip/get_ip.dart';
 import 'package:http/http.dart' as http;
 import 'package:madadkaronline/classes/madadkar.dart';
 import 'package:madadkaronline/globals.dart';
 import 'package:madadkaronline/pages/mainScreen.dart';
 import 'package:madadkaronline/style/theme.dart' as Theme;
 import 'package:shared_preferences/shared_preferences.dart';
-
 class LoginPage extends StatefulWidget {
   LoginPage({Key key}) : super(key: key);
 
@@ -68,6 +68,8 @@ class _LoginPageState extends State<LoginPage>
 
   Future<madadkarInfo> getMadadkarInfo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    var ip = await GetIp.ipAddress;
+    prefs.setString('IpAddress', ip);
     var result = await http.post(ServerUrl + 'api/Madadkar/GetMadadkarInfo',
         headers: {
           'Authorization': 'Bearer ' + prefs.getString('token')
@@ -123,6 +125,28 @@ class _LoginPageState extends State<LoginPage>
                         fit: BoxFit.fitHeight,
                         image: new AssetImage('assets/images/Mini-Logo.png')),
                   ),
+                  new Text('بنیاد خیریه نیکوکاران شریف', style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w900),
+                    textScaleFactor: 1.8,),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: new LinearGradient(
+                          colors: [
+                            Colors.white,
+                            Colors.white,
+                          ],
+                          begin: const FractionalOffset(0.0, 0.0),
+                          end: const FractionalOffset(1.0, 1.0),
+                          stops: [0.0, 1.0],
+                          tileMode: TileMode.clamp),
+                    ),
+                    width: 100.0,
+                    height: 1.0,
+                    margin: EdgeInsets.fromLTRB(0, 16, 0, 16),
+                  ),
+                  new Text('مددکار آنلاین-نسخه 1.01', style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w900),
+                      textScaleFactor: 0.9),
                   Expanded(
                     flex: 2,
                     child: new ConstrainedBox(
@@ -158,6 +182,7 @@ class _LoginPageState extends State<LoginPage>
     ]);
     loginPasswordController.text = '48067';
     loginUsernameController.text = '09378170204';
+
 
     _pageController = PageController();
   }

@@ -1,1 +1,1 @@
-final String ServerUrl = 'http://localhost:9804/';
+final String ServerUrl = 'http://188.0.240.6:8020/';

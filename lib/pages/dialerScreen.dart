@@ -1,11 +1,38 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/webrtc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:madadkaronline/classes/hami.dart';
+import 'package:madadkaronline/classes/madadkar.dart';
+import 'package:madadkaronline/globals.dart';
+import 'package:madadkaronline/pages/callScreen.dart';
 import 'package:madadkaronline/style/theme.dart' as Theme;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sip_ua/sip_ua.dart';
 
+class Debouncer {
+  final int milliseconds;
+  VoidCallback action;
+  Timer _timer;
+
+  Debouncer({this.milliseconds});
+
+  run(VoidCallback action) {
+    if (null != _timer) {
+      _timer.cancel();
+    }
+    _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
+}
 
 class DialerPage extends StatefulWidget {
+  final madadkarInfo madadkar;
+
+  const DialerPage({Key key, this.madadkar}) : super(key: key);
+
   @override
   _DialerPageState createState() => _DialerPageState();
 }
@@ -18,9 +45,12 @@ class _DialerPageState extends State<DialerPage>
   String _displayName = '4009';
   String _authorizationUser = '4009';
   TextEditingController _controller = new TextEditingController();
-
+  var _searchController = new TextEditingController();
+  List<HamisInfo> _hamis = new List<HamisInfo>();
+  List<HamisInfo> _hamisOut;
   RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+  String _filter = '';
 
 //  double _localVideoHeight;
 //  double _localVideoWidth;
@@ -36,8 +66,23 @@ class _DialerPageState extends State<DialerPage>
   SIPUAHelper helper = SIPUAHelper();
   bool isRegistered = false;
 
-  Future<List<HamisInfo>> GetHamis() async {
+  final _debouncer = Debouncer(milliseconds: 500);
 
+  //Future<List<HamisInfo>> _future;
+  Future<List<HamisInfo>> GetHamis() async {
+    List<HamisInfo> res = new List<HamisInfo>();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var token = prefs.getString('token');
+    var result = await http.post(ServerUrl + 'api/Madadkar/GetHamis',
+        headers: {'Authorization': 'Bearer ' + token});
+    debugPrint(result.statusCode.toString());
+    if (result.statusCode == 200) {
+      Iterable jResults = json.decode(result.body);
+
+      res = jResults.map((model) => HamisInfo.fromJson(model)).toList();
+      return res;
+    }
+    return null;
   }
 
   void _handelStreams(CallState event) async {
@@ -131,8 +176,16 @@ class _DialerPageState extends State<DialerPage>
 
   @override
   void initState() {
+    setState(() {
+      _password = widget.madadkar.sipPassword;
+      _wsUri = widget.madadkar.sipWsUrl;
+      _sipUri = widget.madadkar.sipUrl;
+      _displayName = widget.madadkar.sipDisplayname;
+      _authorizationUser = widget.madadkar.sipExtention;
+    });
     // TODO: implement initState
-    super.initState();
+
+
     _registrationState = helper.registerState;
     helper.addSipUaHelperListener(this);
     handleSave(context);
@@ -150,22 +203,32 @@ class _DialerPageState extends State<DialerPage>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: new Scaffold(
-        appBar: AppBar(
-            title: new Row(
-              children: <Widget>[
-                new Text('وضعیت خط تلفن'),
-                new Icon(
-                  isRegistered ? Icons.phone_android : Icons.phonelink_erase,
-                  color: isRegistered ? Colors.greenAccent : Colors.black26,
-                ),
-              ],
-            )
-        ),
-        body: Container(
+          floatingActionButton: FloatingActionButton(
+            child: Icon(Icons.call),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                  callScreen(PhoneNumber: '09158259007',
+
+                    SipHelper: helper,),));
+            },
+          ),
+          appBar: AppBar(
+              title: new Row(
+                children: <Widget>[
+                  new Text('وضعیت خط تلفن'),
+                  new Icon(
+                    isRegistered ? Icons.phone_android : Icons.phonelink_erase,
+                    color: isRegistered ? Colors.greenAccent : Colors.black26,
+                  ),
+                  Text('شماره دخلی:$_authorizationUser', textScaleFactor: 0.7,)
+                ],
+              )),
+          body: new Container(
+            height: MediaQuery
+                .of(context)
+                .size
+                .height,
             width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height >= 775.0
-                ? MediaQuery.of(context).size.height
-                : 775.0,
             decoration: new BoxDecoration(
               gradient: new LinearGradient(
                   colors: [
@@ -177,92 +240,189 @@ class _DialerPageState extends State<DialerPage>
                   stops: [0.0, 1.0],
                   tileMode: TileMode.clamp),
             ),
-            child: new Center(
-                child: new Container(
-              height: 400,
-              width: 400,
-              child: new Card(
-                color: Colors.white60,
-                child: new Container(
-                  height: MediaQuery.of(context).size.height >= 235.0
-                      ? MediaQuery.of(context).size.height
-                      : 235.0,
-                  padding: EdgeInsets.all(15),
-                  child: Column(
-                    //mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      new Text('شماره تماس'),
-                      Padding(
-                        padding: EdgeInsets.only(top: 10),
-                      ),
-                      new TextField(
-                        controller: _controller,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            prefixIcon: Icon(FontAwesomeIcons.phoneSquare)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(top: 10),
-                      ),
-                      new MaterialButton(
-                          child: new Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              new Text('شماره گیری'),
-                              Padding(
-                                padding: EdgeInsets.only(left: 35),
-                              ),
-                              new Icon(
-                                FontAwesomeIcons.phoneAlt,
-                                color: Colors.white,
-                              )
-                            ],
-                          ),
-                          color: Colors.greenAccent,
-                          padding: EdgeInsets.fromLTRB(15, 20, 15, 20),
-                          onPressed: () {
-                            FocusScopeNode currentFocus =
-                                FocusScope.of(context);
 
-                            if (!currentFocus.hasPrimaryFocus) {
-                              currentFocus.unfocus();
-                            }
-                            _handleCall(context);
-                          }),
-                      Padding(
-                        padding: EdgeInsets.only(top: 10),
+            padding: EdgeInsets.fromLTRB(8, 0, 8, 6),
+            child: new Column(
+              children: <Widget>[
+                new Container(
+                  //height: 50,
+                    color: Colors.black26,
+                    child: new TextField(
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(Icons.search, color: Colors.white,),
+                        hintText: 'جستجوی حامی',
+
+
                       ),
-                      new MaterialButton(
-                          child: new Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              new Text('قطع تماس'),
-                              Padding(
-                                padding: EdgeInsets.only(left: 35),
-                              ),
-                              new Icon(
-                                FontAwesomeIcons.phoneSquareAlt,
-                                color: Colors.white,
+
+                      //controller: _searchController,
+                      onChanged: (String value) {
+                        setState(() {
+                          _filter = value;
+                        });
+                      },
+                    )),
+                Expanded(
+                  child: FutureBuilder<List<HamisInfo>>(
+                    future: GetHamis(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        var s = snapshot.data;
+
+                        return ListView.builder(
+                          itemCount: s.length,
+                          itemBuilder: (context, index) {
+                            if (_filter != null) {
+                              return '${s[index].hamiLName}'
+                                  .contains(_filter) ||
+                                  '${s[index].hamiFName}'
+                                      .contains(_filter) ||
+                                  '${s[index].hamiMobile1}'
+                                      .contains(_filter) ||
+                                  '${s[index].hamiMobile2}'
+                                      .contains(_filter)
+                                  ?
+                              Card(
+                                  child: new Container(
+                                    padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
+                                    child: new Row(
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .spaceBetween,
+                                      children: <Widget>[
+                                        new Container(
+
+                                          child: new Text(
+                                              '${s[index].hamiFName} ${s[index]
+                                                  .hamiLName}'),
+
+                                        ),
+                                        FlatButton(
+                                          onPressed: () {
+                                            Navigator.push(context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      callScreen(
+                                                        PhoneNumber: '${s[index]
+                                                            .hamiMobile1}',
+
+                                                        SipHelper: helper,),));
+                                          },
+                                          color: Colors.green,
+                                          child: new Row(children: <Widget>[
+                                            new Text('${s[index].hamiMobile1}',
+                                              textScaleFactor: 0.7,),
+                                            new Icon(Icons.phone)
+                                          ],),
+                                        ),
+                                        '${s[index].hamiMobile2}' != ''
+                                            ? FlatButton(
+                                          onPressed: () {
+                                            Navigator.push(context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      callScreen(
+                                                        PhoneNumber: '${s[index]
+                                                            .hamiMobile2}',
+
+                                                        SipHelper: helper,),));
+                                          },
+                                          color: Colors.green,
+                                          child: new Row(children: <Widget>[
+                                            new Text('${s[index].hamiMobile2}',
+                                              textScaleFactor: 0.7,),
+                                            new Icon(Icons.phone)
+                                          ],),
+                                        )
+                                            : Container(width: 0, height: 0,),
+
+                                      ],
+                                    ),
+                                  )
                               )
+                                  : Container(
+                                width: 0,
+                                height: 0,
+                              );
+                            }
+                            return
+                              Card(
+                                  child: new Container(
+                                    padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
+                                    child: new Row(
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .spaceBetween,
+                                      children: <Widget>[
+                                        new Container(
+
+                                          child: new Text(
+                                              '${s[index].hamiFName} ${s[index]
+                                                  .hamiLName}'),
+
+                                        ),
+                                        FlatButton(
+                                          onPressed: () {
+                                            Navigator.push(context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      callScreen(
+                                                        PhoneNumber: '${s[index]
+                                                            .hamiMobile1}',
+
+                                                        SipHelper: helper,),));
+                                          },
+                                          color: Colors.green,
+                                          child: new Row(children: <Widget>[
+                                            new Text('${s[index].hamiMobile1}',
+                                                textScaleFactor: 0.7),
+                                            new Icon(Icons.phone)
+                                          ],),
+                                        ),
+                                        '${s[index].hamiMobile2}' != ''
+                                            ? FlatButton(
+                                          onPressed: () {
+                                            Navigator.push(context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      callScreen(
+                                                        PhoneNumber: '${s[index]
+                                                            .hamiMobile2}',
+
+                                                        SipHelper: helper,),));
+                                          },
+                                          color: Colors.green,
+                                          child: new Row(children: <Widget>[
+                                            new Text('${s[index].hamiMobile2}',
+                                                textScaleFactor: 0.7),
+                                            new Icon(Icons.phone)
+                                          ],),
+                                        )
+                                            : Container(width: 0, height: 0,),
+
+                                      ],
+                                    ),
+                                  )
+                              );
+                          },
+                        );
+                      }
+                      return new Center(
+                        child: Container(
+                          height: 100,
+                          width: 100,
+                          child: new Column(
+                            children: <Widget>[
+                              CircularProgressIndicator(),
+                              new Text('در حال دریافت اطلاعات')
                             ],
                           ),
-                          color: Colors.greenAccent,
-                          padding: EdgeInsets.fromLTRB(15, 20, 15, 20),
-                          onPressed: () {
-                            _handleHangup();
-                          }),
-                      new Text('${_registrationState.state}'),
-                      new Text('${_PhoneState}')
-                    ],
+                        ),
+                      );
+                    },
                   ),
-                ),
-              ),
-            ))),
-      ),
+                )
+              ],
+            ),
+          )),
     );
   }
 
