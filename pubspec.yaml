@@ -27,8 +27,11 @@ dependencies:
   sip_ua:
   shared_preferences:
   http:
-  nice_button:
+  all_sensors:
+
   get_ip:
+
+  flutter_android:
 
   # flutter_webrtc:
 
@@ -39,10 +42,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  flutter_launcher_icons:
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icon.png"
 # The following section is specific to Flutter.
 flutter:
 

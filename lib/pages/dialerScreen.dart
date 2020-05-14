@@ -198,13 +198,51 @@ class _DialerPageState extends State<DialerPage>
     helper.removeSipUaHelperListener(this);
   }
 
+  void GoToCallScreen(BuildContext context, String PhoneNumber) {
+    // ignore: unrelated_type_equality_checks
+    if (isRegistered)
+      // debugPrint('OK OK OK OK ===================');
+      Navigator.push(context,
+          MaterialPageRoute(
+            builder: (context) =>
+                callScreen(
+                  PhoneNumber: PhoneNumber,
+
+                  SipHelper: helper,),));
+    else
+      showInSnackBar('خط تلفن قطع می باشد، با پشتیبان تماس بگیرید');
+  }
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
+  void showInSnackBar(String value) {
+    FocusScope.of(context).requestFocus(new FocusNode());
+    _scaffoldKey.currentState?.removeCurrentSnackBar();
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+      content: new Text(
+        value,
+        textAlign: TextAlign.center,
+        style:
+        TextStyle(color: Colors.white, fontSize: 16.0, fontFamily: "Yekan"),
+      ),
+      backgroundColor: Colors.blue,
+      duration: Duration(seconds: 3),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: new Scaffold(
+
           floatingActionButton: FloatingActionButton(
-            child: Icon(Icons.call),
+            child: new Column(
+              children: <Widget>[
+                Icon(Icons.call),
+                Text('برنامه نویس', textScaleFactor: 0.7,)
+              ],
+            ),
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) =>
                   callScreen(PhoneNumber: '09158259007',
@@ -212,6 +250,9 @@ class _DialerPageState extends State<DialerPage>
                     SipHelper: helper,),));
             },
           ),
+
+
+          key: _scaffoldKey,
           appBar: AppBar(
               title: new Row(
                 children: <Widget>[
@@ -282,12 +323,24 @@ class _DialerPageState extends State<DialerPage>
                                   '${s[index].hamiMobile2}'
                                       .contains(_filter)
                                   ?
-                              Card(
-                                  child: new Container(
-                                    padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
-                                    child: new Row(
+                              new Container(
+                                  decoration: new BoxDecoration(
+                                    color: Colors.grey.shade200.withOpacity(
+                                        0.3),
+                                    borderRadius: new BorderRadius.circular(
+                                        5.0),
+                                  ),
+                                  padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
+                                  margin: EdgeInsets.all(4),
+                                  child:
+                                  new
+                                  Column(
+                                    children: <Widget>[
+                                      Row(
                                       mainAxisAlignment: MainAxisAlignment
-                                          .spaceBetween,
+                                          .center,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .center,
                                       children: <Widget>[
                                         new Container(
 
@@ -296,110 +349,134 @@ class _DialerPageState extends State<DialerPage>
                                                   .hamiLName}'),
 
                                         ),
-                                        FlatButton(
-                                          onPressed: () {
-                                            Navigator.push(context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      callScreen(
-                                                        PhoneNumber: '${s[index]
-                                                            .hamiMobile1}',
-
-                                                        SipHelper: helper,),));
-                                          },
-                                          color: Colors.green,
-                                          child: new Row(children: <Widget>[
-                                            new Text('${s[index].hamiMobile1}',
-                                              textScaleFactor: 0.7,),
-                                            new Icon(Icons.phone)
-                                          ],),
-                                        ),
-                                        '${s[index].hamiMobile2}' != ''
-                                            ? FlatButton(
-                                          onPressed: () {
-                                            Navigator.push(context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      callScreen(
-                                                        PhoneNumber: '${s[index]
-                                                            .hamiMobile2}',
-
-                                                        SipHelper: helper,),));
-                                          },
-                                          color: Colors.green,
-                                          child: new Row(children: <Widget>[
-                                            new Text('${s[index].hamiMobile2}',
-                                              textScaleFactor: 0.7,),
-                                            new Icon(Icons.phone)
-                                          ],),
-                                        )
-                                            : Container(width: 0, height: 0,),
 
                                       ],
-                                    ),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment: '${s[index]
+                                            .hamiMobile2}' != ''
+                                            ? MainAxisAlignment
+                                            .spaceAround
+                                            : MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .center,
+                                        children: <Widget>[
+                                          FlatButton(
+                                            onPressed: () {
+                                              GoToCallScreen(
+                                                  context, '${s[index]
+                                                  .hamiMobile1}');
+                                            },
+                                            color: Colors.green,
+                                            child: new Row(children: <Widget>[
+                                              new Text('${s[index].hamiMobile1}',
+                                                textScaleFactor: 0.9,),
+                                              new Icon(Icons.phone)
+                                            ],),
+                                          ),
+                                          '${s[index].hamiMobile2}' != ''
+                                              ? FlatButton(
+                                            onPressed: () {
+                                              GoToCallScreen(
+                                                  context, '${s[index]
+                                                  .hamiMobile2}');
+                                            },
+                                            color: Colors.green,
+                                            child: new Row(children: <Widget>[
+                                              new Text('${s[index].hamiMobile2}',
+                                                textScaleFactor: 0.9,),
+                                              new Icon(Icons.phone)
+                                            ],),
+                                          )
+                                              : Container(width: 0, height: 0,),
+
+                                        ],
+                                      )
+
+                                    ],
                                   )
                               )
+
                                   : Container(
                                 width: 0,
                                 height: 0,
                               );
                             }
                             return
-                              Card(
-                                  child: new Container(
-                                    padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
-                                    child: new Row(
-                                      mainAxisAlignment: MainAxisAlignment
-                                          .spaceBetween,
-                                      children: <Widget>[
-                                        new Container(
+                              new Container(
+                                  decoration: new BoxDecoration(
+                                    color: Colors.grey.shade200.withOpacity(
+                                        0.3),
+                                    borderRadius: new BorderRadius.circular(
+                                        5.0),
+                                  ),
+                                  padding: EdgeInsets.fromLTRB(10, 2, 10, 2),
+                                  margin: EdgeInsets.all(4),
+                                  child:
+                                  new
+                                  Column(
+                                    children: <Widget>[
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment
+                                            .center,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .center,
+                                        children: <Widget>[
+                                          new Container(
 
-                                          child: new Text(
-                                              '${s[index].hamiFName} ${s[index]
-                                                  .hamiLName}'),
+                                            child: new Text(
+                                                '${s[index]
+                                                    .hamiFName} ${s[index]
+                                                    .hamiLName}'),
 
-                                        ),
-                                        FlatButton(
-                                          onPressed: () {
-                                            Navigator.push(context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      callScreen(
-                                                        PhoneNumber: '${s[index]
-                                                            .hamiMobile1}',
+                                          ),
 
-                                                        SipHelper: helper,),));
-                                          },
-                                          color: Colors.green,
-                                          child: new Row(children: <Widget>[
-                                            new Text('${s[index].hamiMobile1}',
-                                                textScaleFactor: 0.7),
-                                            new Icon(Icons.phone)
-                                          ],),
-                                        ),
-                                        '${s[index].hamiMobile2}' != ''
-                                            ? FlatButton(
-                                          onPressed: () {
-                                            Navigator.push(context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      callScreen(
-                                                        PhoneNumber: '${s[index]
-                                                            .hamiMobile2}',
+                                        ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment: '${s[index]
+                                            .hamiMobile2}' != ''
+                                            ? MainAxisAlignment
+                                            .spaceAround
+                                            : MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .center,
+                                        children: <Widget>[
+                                          FlatButton(
+                                            onPressed: () {
+                                              GoToCallScreen(
+                                                  context, '${s[index]
+                                                  .hamiMobile1}');
+                                            },
+                                            color: Colors.green,
+                                            child: new Row(children: <Widget>[
+                                              new Text(
+                                                '${s[index].hamiMobile1}',
+                                                textScaleFactor: 0.9,),
+                                              new Icon(Icons.phone)
+                                            ],),
+                                          ),
+                                          '${s[index].hamiMobile2}' != ''
+                                              ? FlatButton(
+                                            onPressed: () {
+                                              GoToCallScreen(
+                                                  context, '${s[index]
+                                                  .hamiMobile2}');
+                                            },
+                                            color: Colors.green,
+                                            child: new Row(children: <Widget>[
+                                              new Text(
+                                                '${s[index].hamiMobile2}',
+                                                textScaleFactor: 0.9,),
+                                              new Icon(Icons.phone)
+                                            ],),
+                                          )
+                                              : Container(width: 0, height: 0,),
 
-                                                        SipHelper: helper,),));
-                                          },
-                                          color: Colors.green,
-                                          child: new Row(children: <Widget>[
-                                            new Text('${s[index].hamiMobile2}',
-                                                textScaleFactor: 0.7),
-                                            new Icon(Icons.phone)
-                                          ],),
-                                        )
-                                            : Container(width: 0, height: 0,),
+                                        ],
+                                      )
 
-                                      ],
-                                    ),
+                                    ],
                                   )
                               );
                           },
@@ -407,8 +484,8 @@ class _DialerPageState extends State<DialerPage>
                       }
                       return new Center(
                         child: Container(
-                          height: 100,
-                          width: 100,
+                          height: 150,
+                          width: 150,
                           child: new Column(
                             children: <Widget>[
                               CircularProgressIndicator(),

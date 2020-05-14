@@ -1,8 +1,12 @@
 import 'dart:async';
 
+import 'package:all_sensors/all_sensors.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/webrtc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:sip_ua/sip_ua.dart';
+
 
 class callScreen extends StatefulWidget {
   final SIPUAHelper SipHelper;
@@ -19,9 +23,19 @@ class callScreen extends StatefulWidget {
 class _callScreenState extends State<callScreen>
     implements SipUaHelperListener {
 
-
+  //PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK=32;
+  bool _proximityValues = false;
   String _timeLabel = '00:00';
   Timer _timer;
+  Widget callStatus = Container(
+    height: 150,
+    width: 180,
+  );
+  String _PhoneState = '';
+  Widget _callButton;
+
+
+
 
   RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
@@ -52,8 +66,59 @@ class _callScreenState extends State<callScreen>
 
   //بخش مربوط به عملیات قطع تماس
   void _handleHangup() {
-    helper.hangup();
+    setState(() {
+      if (_remoteStream != null)
+        _remoteStream.getAudioTracks()[0].enableSpeakerphone(true);
+      if (_localStream != null)
+        _localStream.getAudioTracks()[0].enableSpeakerphone(true);
+    });
+    try {
+      helper.hangup();
+      debugPrint('==============Hangup=============');
+    } catch (ex) {
+      throw ex;
+    }
+
     _timer.cancel();
+  }
+
+  Widget dialing = new Container(
+    width: 180,
+    height: 150,
+    alignment: Alignment.center,
+    child: new Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        LinearProgressIndicator(),
+        Text('در حال برقراری تماس')
+      ],
+    ),
+  );
+
+  Widget accepted = new Container(
+    width: 180,
+    height: 150,
+    alignment: Alignment.center,
+    child: new Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        CircleAvatar(
+          backgroundColor: Colors.green,
+          child: Icon(FontAwesomeIcons.headphones),
+          radius: 40,
+        ),
+        Text('تماس پاسخ داده شد')
+      ],
+    ),
+  );
+
+  @override
+  deactivate() {
+    super.deactivate();
+    helper.removeSipUaHelperListener(this);
+    _disposeRenderers();
   }
 
   //تنظیم و راه اندازی رندر صوت
@@ -118,6 +183,25 @@ class _callScreenState extends State<callScreen>
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _callButton = RaisedButton(
+
+        child: new Text('شماره گیری ${widget.PhoneNumber}'),
+        color: Colors.green,
+        onPressed: () {
+          _handleCall(context);
+        },
+        padding: EdgeInsets.fromLTRB(5, 45, 5, 45),
+      );
+    });
+
+    proximityEvents.listen((ProximityEvent event) {
+      setState(() {
+        // event.getValue return true or false
+        _proximityValues = event.getValue();
+      });
+    });
+
 
     _initRenderers();
     helper.addSipUaHelperListener(this);
@@ -127,57 +211,181 @@ class _callScreenState extends State<callScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-          appBar: AppBar(
-            title: new Text('Call Screen'),
-          ),
-          body:
-          new Container(
-            height: MediaQuery
-                .of(context)
-                .size
-                .height,
-            width: MediaQuery
-                .of(context)
-                .size
-                .width,
-            child: Center(
-              child: new Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  new Text(_timeLabel),
-                  RaisedButton(
-                    child: new Text('Call ${widget.PhoneNumber}'),
-                    color: Colors.green,
-                    onPressed: () {
-                      _handleCall(context);
-                    },
-                  ), RaisedButton(
-                    child: new Text('End ${widget.PhoneNumber}'),
-                    color: Colors.red,
-                    onPressed: () {
-                      _handleHangup();
-                    },
-
-                  ),
-
-                ],
-              ),
+    // SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.top]);
+    return AbsorbPointer(
+      absorbing: _proximityValues,
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Scaffold(
+            appBar: AppBar(
+              title: new Text('تماس با ${widget.PhoneNumber}'),
+              centerTitle: true,
             ),
+            body:
+            new Container(
+              padding: EdgeInsets.all(20),
+              height: MediaQuery
+                  .of(context)
+                  .size
+                  .height,
+              width: MediaQuery
+                  .of(context)
+                  .size
+                  .width,
+              child: Center(
+                child: new Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    //Text('${_proximityValues}'),
+                    Container(
+                      height: 200,
+                      width: 200,
+                    ),
 
-          )
-      ),
+/*
+                    new Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        new Text('وضعیت: ${_callstate}'),
+                      ],
+                    ),
+*/
+
+                    new Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        new Text('وضعیت: ${_PhoneState}'),
+                      ],
+                    ),
+
+                    // new Text(_timeLabel),
+                    _callButton,
+/*
+                    RaisedButton(
+                      child: new Text('قطع تماس ${widget.PhoneNumber}'),
+                      color: Colors.red,
+                      onPressed: () {
+                        _handleHangup();
+                      },
+                      padding: EdgeInsets.fromLTRB(5,15,5,15),
+
+
+
+                    ),
+*/
+
+                  ],
+                ),
+              ),
+
+            )
+        ),
+      )
+      ,
     );
+
   }
 
   @override
   void callStateChanged(CallState state) {
+    setState(() {
+      _callstate = state.state;
+    });
     // TODO: implement callStateChanged
-
-    if (state == CallStateEnum.STREAM) {
+    if (state.state == CallStateEnum.STREAM) {
       _handelStreams(state);
+    }
+    switch (state.state) {
+      case CallStateEnum.STREAM:
+      case CallStateEnum.CALL_INITIATION:
+      case CallStateEnum.CONNECTING:
+      case CallStateEnum.PROGRESS:
+        {
+          setState(() {
+            _callButton = RaisedButton(
+              child: new Text('قطع تماس ${widget.PhoneNumber}'),
+              color: Colors.red,
+              onPressed: () {
+                _handleHangup();
+              },
+              padding: EdgeInsets.fromLTRB(5, 45, 5, 45),
+
+
+            );
+          });
+          break;
+        }
+      case CallStateEnum.ENDED:
+      case CallStateEnum.CONFIRMED:
+      case CallStateEnum.ACCEPTED:
+      case CallStateEnum.FAILED:
+        {
+          setState(() {
+            _callButton = RaisedButton(
+
+              child: new Text('شماره گیری ${widget.PhoneNumber}'),
+              color: Colors.green,
+              onPressed: () {
+                _handleCall(context);
+              },
+              padding: EdgeInsets.fromLTRB(5, 45, 5, 45),
+            );
+          });
+          break;
+        }
+
+      default:
+        {
+          setState(() {
+            _callButton = RaisedButton(
+
+              child: new Text('شماره گیری ${widget.PhoneNumber}'),
+              color: Colors.green,
+              onPressed: () {
+                _handleCall(context);
+              },
+              padding: EdgeInsets.fromLTRB(5, 45, 5, 45),
+            );
+          });
+        }
+    }
+    switch (state.state) {
+      case CallStateEnum.STREAM:
+      case CallStateEnum.CALL_INITIATION:
+      case CallStateEnum.PROGRESS:
+        {
+          setState(() {
+            _PhoneState = 'در حال برقراری تماس';
+          });
+          break;
+        }
+      case CallStateEnum.ENDED:
+        {
+          setState(() {
+            _PhoneState = 'تماس پایان یافت';
+          });
+          break;
+        }
+      case CallStateEnum.CONFIRMED:
+      case CallStateEnum.ACCEPTED:
+        {
+          _PhoneState = 'تماس پاسخ داده شده است';
+          break;
+        }
+      case CallStateEnum.FAILED:
+        {
+          _PhoneState = 'تماس قطع شد';
+          break;
+        }
+
+      default:
+        {
+          setState(() {
+            _PhoneState = '';
+          });
+        }
     }
   }
 

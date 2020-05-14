@@ -32,16 +32,49 @@ class _LoginPageState extends State<LoginPage>
   TextEditingController loginUsernameController = new TextEditingController();
   TextEditingController loginPasswordController = new TextEditingController();
 
+  bool checkValue = false;
+  SharedPreferences sharedPreferences;
+
   bool _obscureTextLogin = true;
 
-  //bool _obscureTextSignup = true;
-  // bool _obscureTextSignupConfirm = true;
+  _onChanged(bool value) async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    setState(() {
+      checkValue = value;
+      sharedPreferences.setBool("check", checkValue);
+      sharedPreferences.setString("username", loginUsernameController.text);
+      sharedPreferences.setString("password", loginPasswordController.text);
+      //  sharedPreferences.commit();
+      getCredential();
+    });
+  }
 
-  //TextEditingController signupEmailController = new TextEditingController();
-  // TextEditingController signupNameController = new TextEditingController();
-  //TextEditingController signupPasswordController = new TextEditingController();
-  //TextEditingController signupConfirmPasswordController =
-  //new TextEditingController();
+  getCredential() async {
+    sharedPreferences = await SharedPreferences.getInstance();
+    setState(() {
+      checkValue = sharedPreferences.getBool("check");
+      if (checkValue != null) {
+        if (checkValue) {
+          loginUsernameController.text =
+              sharedPreferences.getString("username");
+          loginPasswordController.text =
+              sharedPreferences.getString("password");
+        } else {
+          loginUsernameController.text = "";
+          loginPasswordController.text = "";
+          sharedPreferences.remove("username");
+          sharedPreferences.remove("password");
+          //sharedPreferences.remove("username");
+
+        }
+      } else {
+        checkValue = false;
+      }
+    });
+  }
+
+
+
   Future<void> loginToSystem() async {
     var result = await http.post(ServerUrl + 'token',
         body: {
@@ -53,9 +86,9 @@ class _LoginPageState extends State<LoginPage>
     if (result.statusCode == 200) {
       //debugPrint('${result.body}');
       var jResult = json.decode(result.body);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      sharedPreferences = await SharedPreferences.getInstance();
       //debugPrint(jResult['access_token']);
-      prefs.setString('token', jResult['access_token']);
+      sharedPreferences.setString('token', jResult['access_token']);
       //debugPrint(prefs.get('token'));
       //http.post(ServerUrl+'')
       madadkarInfo info = await getMadadkarInfo();
@@ -67,12 +100,12 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Future<madadkarInfo> getMadadkarInfo() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    sharedPreferences = await SharedPreferences.getInstance();
     var ip = await GetIp.ipAddress;
-    prefs.setString('IpAddress', ip);
+    sharedPreferences.setString('IpAddress', ip);
     var result = await http.post(ServerUrl + 'api/Madadkar/GetMadadkarInfo',
         headers: {
-          'Authorization': 'Bearer ' + prefs.getString('token')
+          'Authorization': 'Bearer ' + sharedPreferences.getString('token')
         }
     );
     if (result.statusCode == 200) {
@@ -174,17 +207,18 @@ class _LoginPageState extends State<LoginPage>
 
   @override
   void initState() {
-    super.initState();
+    //super.initState();
+    getCredential();
 
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    loginPasswordController.text = '48067';
-    loginUsernameController.text = '09378170204';
+    //loginPasswordController.text = '48067';
+    //loginUsernameController.text = '09378170204';
 
 
-    _pageController = PageController();
+    //_pageController = PageController();
   }
 
   void showInSnackBar(String value) {
@@ -285,6 +319,7 @@ class _LoginPageState extends State<LoginPage>
                           ),
                         ),
                       ),
+
                     ],
                   ),
                 ),
@@ -342,6 +377,7 @@ class _LoginPageState extends State<LoginPage>
                       }
                     // showInSnackBar("کلید ورود فشرده شد")),
                   )),
+
             ],
           ),
           Padding(
@@ -382,6 +418,18 @@ class _LoginPageState extends State<LoginPage>
               ],
             ),
           ),
+          new Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Checkbox(
+                value: checkValue,
+                onChanged: _onChanged,
+
+              ),
+              Text('ذخیره اطلاعات ورود')
+            ],
+          )
         ],
       ),
     );
